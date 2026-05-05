@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <title>Lembrete por Voz</title>
-
   <link rel="manifest" href="manifest.json" />
 
   <style>
@@ -21,15 +20,37 @@
       border-radius: 10px;
       background: #007bff;
       color: white;
+      cursor: pointer;
+    }
+
+    button:active {
+      background: #0056b3;
     }
 
     #texto {
       margin-top: 30px;
       font-size: 28px;
+      color: #333;
     }
 
     #lista {
       margin-top: 30px;
+    }
+
+    #lista p {
+      font-size: 18px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 8px auto;
+      width: 80%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 16px;
+      color: green;
     }
   </style>
 </head>
@@ -37,9 +58,10 @@
 <body>
 
   <h1>🎙️ Fale seu lembrete</h1>
-  <button onclick="falar()">Falar</button>
+  <button onclick="falar()">🎤 Falar</button>
 
   <div id="texto">Clique e fale...</div>
+  <div id="status"></div>
 
   <h2>📋 Lembretes</h2>
   <div id="lista"></div>
@@ -57,71 +79,98 @@
       recognition.onresult = (event) => {
         const textoFalado = event.results[0][0].transcript;
 
-        texto.innerText = textoFalado;
+        document.getElementById("texto").innerText = textoFalado;
 
         salvar(textoFalado);
         mostrar();
         criarAlarme(textoFalado);
       };
+
+      recognition.onerror = (event) => {
+        console.error("Erro no reconhecimento:", event.error);
+        document.getElementById("status").innerText = "❌ Erro ao ouvir. Tente novamente.";
+      };
+    } else {
+      alert("Seu navegador não suporta reconhecimento de voz.");
     }
 
     function falar() {
+      document.getElementById("status").innerText = "🎙️ Ouvindo...";
+      document.getElementById("texto").innerText = "Fale agora...";
       recognition.start();
     }
 
-    // salvar
+    // Salvar lembrete no localStorage
     function salvar(texto) {
       const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
-      dados.push({ texto });
+      dados.push({ texto, hora: new Date().toLocaleTimeString() });
       localStorage.setItem("lembretes", JSON.stringify(dados));
     }
 
-    // mostrar
+    // Mostrar lembretes na tela
     function mostrar() {
       const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
+      const lista = document.getElementById("lista");
       lista.innerHTML = "";
 
       dados.forEach((item) => {
         const p = document.createElement("p");
-        p.innerText = item.texto;
+        p.innerText = `🕐 ${item.hora} — ${item.texto}`;
         lista.appendChild(p);
       });
     }
 
-    // extrair minutos (ex: "em 5 minutos")
+    // Extrair minutos da frase falada
     function extrairMinutos(texto) {
-      const match = texto.match(/(\d+)\s*min/);
-      return match ? parseInt(match[1]) : null;
+      const t = texto.toLowerCase();
+
+      // Números por extenso
+      const porExtenso = {
+        "um": 1, "uma": 1,
+        "dois": 2, "duas": 2,
+        "três": 3, "tres": 3,
+        "quatro": 4,
+        "cinco": 5,
+        "seis": 6,
+        "sete": 7,
+        "oito": 8,
+        "nove": 9,
+        "dez": 10,
+        "quinze": 15,
+        "vinte": 20,
+        "trinta": 30
+      };
+
+      // Tenta pegar número por extenso: "em cinco minutos"
+      for (const [palavra, valor] of Object.entries(porExtenso)) {
+        const regex = new RegExp(palavra + "\\s*minuto");
+        if (regex.test(t)) return valor;
+      }
+
+      // Tenta pegar número dígito: "em 1 minuto", "daqui 3 minutos"
+      const matchDigito = t.match(/(\d+)\s*minuto/);
+      if (matchDigito) return parseInt(matchDigito[1]);
+
+      return null;
     }
 
-    // criar alarme
+    // Criar alarme com base no tempo detectado
     function criarAlarme(texto) {
       const minutos = extrairMinutos(texto);
 
-      if (!minutos) return;
+      console.log("🎙️ Texto:", texto);
+      console.log("⏱️ Minutos detectados:", minutos);
+
+      if (!minutos) {
+        document.getElementById("status").innerText = "⚠️ Lembrete salvo, mas sem tempo detectado.";
+        return;
+      }
+
+      document.getElementById("status").innerText = `✅ Alarme criado! Você será lembrado em ${minutos} minuto(s).`;
 
       const tempo = minutos * 60 * 1000;
 
       setTimeout(() => {
         navigator.serviceWorker.ready.then(reg => {
           reg.showNotification("🔔 Lembrete", {
-            body: texto,
-            vibrate: [500, 200, 500, 200, 1000],
-            tag: "lembrete"
-          });
-        });
-      }, tempo);
-    }
-
-    window.onload = () => {
-      mostrar();
-      Notification.requestPermission();
-    };
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js");
-    }
-  </script>
-
-</body>
-</html>
+            body: te
