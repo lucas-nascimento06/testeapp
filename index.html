@@ -37,7 +37,6 @@
       overflow-x: hidden;
     }
 
-    /* ── Grain overlay ── */
     body::before {
       content: '';
       position: fixed; inset: 0; z-index: 0;
@@ -45,7 +44,6 @@
       pointer-events: none;
     }
 
-    /* ── Header ── */
     header {
       position: relative; z-index: 1;
       padding: 28px 24px 20px;
@@ -70,7 +68,6 @@
       margin-top: 2px; font-weight: 300;
     }
 
-    /* ── Wake Lock indicator ── */
     #wakelock-dot {
       margin-left: auto; flex-shrink: 0;
       display: flex; align-items: center; gap: 5px;
@@ -85,10 +82,8 @@
     #wakelock-dot.active .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
     #wakelock-dot.active { color: var(--green); }
 
-    /* ── Main ── */
     main { position: relative; z-index: 1; padding: 24px 20px 120px; max-width: 480px; margin: 0 auto; }
 
-    /* ── Mic button ── */
     #btn-falar {
       width: 100%; height: 80px;
       background: transparent;
@@ -137,7 +132,6 @@
     @keyframes wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }
     #btn-falar.ouvindo .mic-waves { display: flex; }
 
-    /* ── Status ── */
     #status-texto {
       margin-top: 12px; margin-bottom: 24px;
       font-size: 0.82rem; color: var(--muted);
@@ -150,7 +144,6 @@
     #status-texto.ok    { color: var(--green); }
     #status-texto.warn  { color: var(--yellow); }
 
-    /* ── System status bar ── */
     #sys-bar {
       display: flex; align-items: center; gap: 8px;
       padding: 10px 14px; border-radius: 12px;
@@ -188,7 +181,6 @@
     #btn-notif.show { display: block; }
     #btn-notif:active { transform: scale(0.95); }
 
-    /* ── Section ── */
     .section-title {
       font-family: var(--mono);
       font-size: 0.72rem; font-weight: 700;
@@ -196,7 +188,6 @@
       color: var(--muted); margin-bottom: 14px;
     }
 
-    /* ── Lembrete cards ── */
     .lembrete-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -248,7 +239,6 @@
       color: var(--yellow);
     }
 
-    /* ── Vazio ── */
     .empty {
       text-align: center; padding: 40px 0;
       font-family: var(--mono); font-size: 0.8rem;
@@ -259,35 +249,58 @@
     /* ── Alarm overlay ── */
     #alarm-overlay {
       display: none; position: fixed; inset: 0; z-index: 2000;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0,0,0,0.9);
       backdrop-filter: blur(8px);
       align-items: center; justify-content: center; flex-direction: column;
       gap: 20px; padding: 30px;
-      animation: alarmIn 0.4s cubic-bezier(0.34,1.4,0.64,1);
     }
-    #alarm-overlay.show { display: flex; }
+    #alarm-overlay.show { display: flex; animation: alarmIn 0.4s cubic-bezier(0.34,1.4,0.64,1); }
     @keyframes alarmIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:none} }
-    #alarm-ring { font-size: 4rem; animation: ring 0.5s ease-in-out infinite alternate; }
-    @keyframes ring { from{transform:rotate(-15deg)} to{transform:rotate(15deg)} }
+
+    #alarm-ring {
+      font-size: 5rem;
+      animation: ring 0.4s ease-in-out infinite alternate;
+      filter: drop-shadow(0 0 30px rgba(255,100,100,0.8));
+    }
+    @keyframes ring { from{transform:rotate(-18deg) scale(1)} to{transform:rotate(18deg) scale(1.1)} }
+
+    /* Pulsing red background when alarm fires */
+    #alarm-overlay.show {
+      animation: alarmIn 0.4s cubic-bezier(0.34,1.4,0.64,1), bgPulse 0.8s ease-in-out infinite;
+    }
+    @keyframes bgPulse {
+      0%,100% { background: rgba(0,0,0,0.9); }
+      50%     { background: rgba(80,0,0,0.92); }
+    }
+
+    #alarm-titulo {
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: -10px;
+    }
     #alarm-texto {
-      font-size: 1.1rem; font-weight: 500; text-align: center;
+      font-size: 1.2rem; font-weight: 500; text-align: center;
       color: white; max-width: 300px; line-height: 1.5;
+    }
+    #alarm-countdown {
+      font-family: var(--mono); font-size: 0.8rem;
+      color: rgba(255,255,255,0.4);
     }
     #btn-dismiss {
       margin-top: 10px;
       background: white; color: #0a0a0f;
       border: none; border-radius: 14px;
-      padding: 14px 32px;
-      font-family: var(--mono); font-size: 0.9rem; font-weight: 700;
+      padding: 16px 40px;
+      font-family: var(--mono); font-size: 1rem; font-weight: 700;
       cursor: pointer; letter-spacing: 0.5px;
       transition: transform 0.12s;
+      box-shadow: 0 0 40px rgba(255,255,255,0.3);
     }
     #btn-dismiss:active { transform: scale(0.97); }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
   <div class="header-icon">🎙️</div>
   <div>
@@ -300,9 +313,7 @@
   </div>
 </header>
 
-<!-- MAIN -->
 <main>
-  <!-- Botão falar -->
   <button id="btn-falar">
     <span id="btn-icon">🎤</span>
     <span id="btn-label">FALAR</span>
@@ -313,7 +324,6 @@
 
   <div id="status-texto">pronto para ouvir…</div>
 
-  <!-- Status do sistema -->
   <div id="sys-bar" class="warn">
     <div class="sys-dot"></div>
     <span class="sys-label" id="sys-label">verificando</span>
@@ -321,62 +331,124 @@
     <button id="btn-notif" onclick="pedirNotificacao()">permitir notif</button>
   </div>
 
-  <!-- Lista -->
   <div class="section-title">Agendados</div>
   <div id="lista-lembretes">
     <div class="empty" id="empty-msg">nenhum lembrete ainda</div>
   </div>
 </main>
 
-<!-- ALARM OVERLAY (tela aberta) -->
+<!-- ALARM OVERLAY -->
 <div id="alarm-overlay">
   <div id="alarm-ring">🔔</div>
+  <div id="alarm-titulo">LEMBRETE</div>
   <div id="alarm-texto">Lembrete!</div>
-  <button id="btn-dismiss" onclick="dispensarAlarme()">OK, ENTENDI</button>
+  <div id="alarm-countdown"></div>
+  <button id="btn-dismiss" onclick="dispensarAlarme()">✓ OK, ENTENDI</button>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════
-//  WEB AUDIO — gera beep sintetizado (não precisa de arquivo)
+//  WEB AUDIO — alarme alto e longo (1 minuto)
 // ═══════════════════════════════════════════════════════
 let audioCtx = null;
+let alarmIntervalId = null;   // controla o loop de 1 minuto
+let alarmStopTime = 0;        // timestamp de quando parar
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
 
-function tocarBeep(vezes = 3) {
-  const ctx = getAudioCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+/**
+ * Toca um único ciclo de alarme (beep + pausa).
+ * Retorna a duração total do ciclo em segundos.
+ */
+function tocarCicloAlarme(ctx, offsetSecs) {
+  const FREQ_PRINCIPAL = 1000;  // Hz — bem audível
+  const FREQ_SEGUNDO   = 1300;
+  const VOLUME         = 0.9;   // 0..1 — quase no máximo
+  const DURACAO_BEEP   = 0.35;  // s
+  const PAUSA          = 0.12;  // s entre beeps do ciclo
+  const CICLO          = 1.0;   // s total antes do próximo ciclo
 
-  for (let i = 0; i < vezes; i++) {
-    const osc = ctx.createOscillator();
+  // 3 beeps rápidos por ciclo, alternando frequência para chamar atenção
+  const freqs = [FREQ_PRINCIPAL, FREQ_SEGUNDO, FREQ_PRINCIPAL];
+
+  freqs.forEach((freq, i) => {
+    const t = ctx.currentTime + offsetSecs + i * (DURACAO_BEEP + PAUSA);
+
+    const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
+
     osc.connect(gain);
     gain.connect(ctx.destination);
 
-    osc.type = 'sine';
-    osc.frequency.value = 880;
+    osc.type = 'square';   // mais áspero e penetrante que 'sine'
+    osc.frequency.value = freq;
 
-    const t = ctx.currentTime + i * 0.55;
+    // Envelope: ataque instantâneo, sustain alto, decaimento rápido no final
     gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.4, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    gain.gain.linearRampToValueAtTime(VOLUME, t + 0.01);
+    gain.gain.setValueAtTime(VOLUME, t + DURACAO_BEEP - 0.05);
+    gain.gain.linearRampToValueAtTime(0, t + DURACAO_BEEP);
 
     osc.start(t);
-    osc.stop(t + 0.45);
+    osc.stop(t + DURACAO_BEEP + 0.05);
+  });
+
+  return CICLO;
+}
+
+/**
+ * Inicia o alarme e toca por até 60 segundos (ou até dispensarAlarme()).
+ */
+function iniciarAlarme() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+
+  alarmStopTime = Date.now() + 60_000; // 1 minuto
+
+  // Agenda os primeiros ciclos imediatamente usando Web Audio scheduling
+  // e continua com setInterval para cada segundo subsequente
+  let offsetSecs = 0;
+
+  function agendarLote() {
+    // Agenda 4 segundos de som de cada vez para evitar gaps
+    for (let i = 0; i < 4; i++) {
+      if (Date.now() + offsetSecs * 1000 >= alarmStopTime) break;
+      tocarCicloAlarme(ctx, offsetSecs);
+      offsetSecs += 1.0;
+    }
+  }
+
+  agendarLote();
+
+  // A cada 3 segundos re-agenda mais ciclos até completar 1 minuto
+  alarmIntervalId = setInterval(() => {
+    if (Date.now() >= alarmStopTime) {
+      pararAlarme();
+      return;
+    }
+    agendarLote();
+  }, 3000);
+}
+
+function pararAlarme() {
+  alarmStopTime = 0;
+  if (alarmIntervalId !== null) {
+    clearInterval(alarmIntervalId);
+    alarmIntervalId = null;
   }
 }
 
-// "Unlock" AudioContext no primeiro toque (necessário no iOS)
+// Unlock AudioContext no primeiro toque (necessário no iOS)
 document.addEventListener('touchstart', () => {
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }, { once: false, passive: true });
 
 // ═══════════════════════════════════════════════════════
-//  WAKE LOCK — mantém tela viva
+//  WAKE LOCK
 // ═══════════════════════════════════════════════════════
 let wakeLock = null;
 
@@ -385,10 +457,7 @@ async function ativarWakeLock() {
   try {
     wakeLock = await navigator.wakeLock.request('screen');
     setWakeLockUI(true);
-    wakeLock.addEventListener('release', () => {
-      setWakeLockUI(false);
-      // Re-adquire se a página ficar visível novamente
-    });
+    wakeLock.addEventListener('release', () => setWakeLockUI(false));
   } catch(e) {
     setWakeLockUI(false);
   }
@@ -396,12 +465,10 @@ async function ativarWakeLock() {
 
 function setWakeLockUI(ativo) {
   const el = document.getElementById('wakelock-dot');
-  const lb = document.getElementById('wl-label');
-  if (ativo) { el.classList.add('active'); lb.textContent = 'wake'; }
-  else        { el.classList.remove('active'); lb.textContent = 'wake'; }
+  if (ativo) el.classList.add('active');
+  else       el.classList.remove('active');
 }
 
-// Re-adquire wake lock quando a aba volta a ficar visível
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && wakeLock === null) {
     await ativarWakeLock();
@@ -409,22 +476,18 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 // ═══════════════════════════════════════════════════════
-//  NOTIFICAÇÕES (complementar — aviso em segundo plano)
+//  NOTIFICAÇÕES
 // ═══════════════════════════════════════════════════════
 async function pedirNotificacao() {
-  const r = await Notification.requestPermission();
+  await Notification.requestPermission();
   atualizarSysBar();
-  // unloca áudio junto
   getAudioCtx();
 }
 
 function dispararNotifNativa(texto) {
   if (Notification.permission === 'granted') {
     try {
-      new Notification('🔔 Lembrete', {
-        body: texto,
-        requireInteraction: true,
-      });
+      new Notification('🔔 Lembrete', { body: texto, requireInteraction: true });
     } catch(e) {}
   }
 }
@@ -482,7 +545,6 @@ if (SpeechRecognition) {
     document.getElementById('btn-icon').textContent = '⏹';
     document.getElementById('btn-label').textContent = 'PARAR';
     setStatus('ouvindo…', 'ativo');
-    // Desbloqueia AudioContext no momento do toque
     getAudioCtx();
   };
 
@@ -507,7 +569,6 @@ if (SpeechRecognition) {
 
 document.getElementById('btn-falar').addEventListener('click', () => {
   if (!recognition) { setStatus('reconhecimento de voz não suportado', 'warn'); return; }
-  // Desbloqueia AudioContext no toque
   getAudioCtx();
   if (ouvindo) recognition.stop();
   else recognition.start();
@@ -524,7 +585,6 @@ function setStatus(txt, cls = '') {
 // ═══════════════════════════════════════════════════════
 function parsearTempo(texto) {
   const t = texto.toLowerCase()
-    .replace('daqui a', 'daqui a')
     .replace('daqui à', 'daqui a');
 
   const regras = [
@@ -537,7 +597,6 @@ function parsearTempo(texto) {
     { re: /(\d+)\s*(hora|horas|hr|h)\b/,                     mult: 3600000 },
     { re: /(\d+)\s*(minuto|minutos|min)\b/,                  mult: 60000   },
     { re: /(\d+)\s*(segundo|segundos|seg)\b/,                 mult: 1000    },
-    // extenso
     { re: /meia\s+hora/,      ms: 1800000 },
     { re: /uma\s+hora/,       ms: 3600000 },
     { re: /um\s+minuto/,      ms: 60000   },
@@ -580,10 +639,7 @@ function processarVoz(texto) {
 }
 
 function agendarLembrete(item) {
-  // setTimeout NA PÁGINA (confiável enquanto tela estiver viva)
   timers[item.id] = setTimeout(() => disparar(item), item.ms);
-
-  // Countdown visual
   iniciarCountdown(item);
 }
 
@@ -592,33 +648,50 @@ function disparar(item) {
   clearInterval(item._interval);
   renderizarLista();
 
-  // 1. Som via Web Audio (funciona sem arquivo externo)
-  tocarBeep(4);
+  // 1. Alarme sonoro alto por 1 minuto
+  iniciarAlarme();
 
-  // 2. Vibração
-  if (navigator.vibrate) navigator.vibrate([400, 150, 400, 150, 800, 150, 400]);
+  // 2. Vibração longa
+  if (navigator.vibrate) navigator.vibrate([500,100,500,100,800,100,500,100,800,100,500]);
 
-  // 3. Overlay visual (se tela aberta)
+  // 3. Overlay visual
   mostrarAlarme(item.texto);
 
-  // 4. Notificação nativa (se tela minimizada)
+  // 4. Notificação nativa
   dispararNotifNativa(item.texto);
 }
 
 // ── Alarm overlay ──
-let alarmeTexto = '';
+let overlayCountdownInterval = null;
+
 function mostrarAlarme(texto) {
-  alarmeTexto = texto;
   document.getElementById('alarm-texto').textContent = texto;
   document.getElementById('alarm-overlay').classList.add('show');
-  // Toca beep extra quando overlay aparece
-  setTimeout(() => tocarBeep(2), 600);
-}
-function dispensarAlarme() {
-  document.getElementById('alarm-overlay').classList.remove('show');
+
+  // Countdown de 60s no overlay
+  let segundos = 60;
+  const countEl = document.getElementById('alarm-countdown');
+  countEl.textContent = `parando em ${segundos}s`;
+
+  overlayCountdownInterval = setInterval(() => {
+    segundos--;
+    if (segundos <= 0) {
+      clearInterval(overlayCountdownInterval);
+      countEl.textContent = '';
+    } else {
+      countEl.textContent = `parando em ${segundos}s`;
+    }
+  }, 1000);
 }
 
-// ── Countdown ──
+function dispensarAlarme() {
+  document.getElementById('alarm-overlay').classList.remove('show');
+  if (overlayCountdownInterval) clearInterval(overlayCountdownInterval);
+  document.getElementById('alarm-countdown').textContent = '';
+  pararAlarme();
+}
+
+// ── Countdown nos cards ──
 function iniciarCountdown(item) {
   const fim = Date.now() + item.ms;
   item._interval = setInterval(() => {
