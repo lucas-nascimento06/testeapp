@@ -125,7 +125,7 @@
 
   <h1>🎙️ Lembrete por Voz</h1>
 
-  <button id="btnFalar" onclick="falar()">🎤 Falar</button>
+  <button id="btnFalar">🎤 Falar</button>
 
   <div id="texto"></div>
   <div id="status"></div>
@@ -140,92 +140,113 @@
     let recognition = null;
     let ouvindo = false;
 
+    // AudioContext desbloqueado no primeiro clique do usuário
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      // Resume caso esteja suspenso (política de autoplay)
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
     // Solicitar permissão de notificação ao carregar
-    if (Notification && Notification.permission === "default") {
+    if (Notification && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     if (SpeechRecognition) {
       recognition = new SpeechRecognition();
-      recognition.lang = "pt-BR";
+      recognition.lang = 'pt-BR';
       recognition.continuous = false;
       recognition.interimResults = false;
 
       recognition.onstart = () => {
         ouvindo = true;
-        setStatus("🎙️ Ouvindo...", false);
-        document.getElementById("texto").textContent = "";
-        document.getElementById("btnFalar").disabled = true;
+        setStatus('🎙️ Ouvindo...', false);
+        document.getElementById('texto').textContent = '';
+        document.getElementById('btnFalar').disabled = true;
       };
 
       recognition.onend = () => {
         ouvindo = false;
-        document.getElementById("btnFalar").disabled = false;
+        document.getElementById('btnFalar').disabled = false;
       };
 
       recognition.onerror = (event) => {
         ouvindo = false;
-        document.getElementById("btnFalar").disabled = false;
+        document.getElementById('btnFalar').disabled = false;
 
         const msgs = {
-          "not-allowed": "❌ Permissão de microfone negada.",
-          "no-speech": "⚠️ Nenhuma fala detectada. Tente novamente.",
-          "network": "❌ Erro de rede. Verifique a conexão.",
-          "aborted": "⚠️ Reconhecimento cancelado.",
-          "audio-capture": "❌ Microfone não encontrado.",
-          "service-not-allowed": "❌ Serviço de voz não permitido.",
+          'not-allowed': '❌ Permissão de microfone negada.',
+          'no-speech': '⚠️ Nenhuma fala detectada. Tente novamente.',
+          'network': '❌ Erro de rede. Verifique a conexão.',
+          'aborted': '⚠️ Reconhecimento cancelado.',
+          'audio-capture': '❌ Microfone não encontrado.',
+          'service-not-allowed': '❌ Serviço de voz não permitido.',
         };
 
-        setStatus(msgs[event.error] || "❌ Erro: " + event.error, true);
+        setStatus(msgs[event.error] || '❌ Erro: ' + event.error, true);
       };
 
       recognition.onresult = (event) => {
         const textoFalado = event.results[0][0].transcript;
-        document.getElementById("texto").textContent = "\"" + textoFalado + "\"";
+        document.getElementById('texto').textContent = '"' + textoFalado + '"';
         salvar(textoFalado);
         criarAlarme(textoFalado);
       };
 
     } else {
-      setStatus("❌ Seu navegador não suporta reconhecimento de voz.", true);
-      document.getElementById("btnFalar").disabled = true;
+      setStatus('❌ Seu navegador não suporta reconhecimento de voz.', true);
+      document.getElementById('btnFalar').disabled = true;
     }
 
-    // ── Funções principais ──────────────────────────────────────────
+    // ── Botão principal ─────────────────────────────────────────────
+    // O AudioContext PRECISA ser criado/desbloqueado dentro de um
+    // evento de toque/clique do usuário para que a vibração e o
+    // beep funcionem quando disparados pelo setTimeout.
 
-    function falar() {
+    document.getElementById('btnFalar').addEventListener('click', () => {
       if (ouvindo) return;
-      setStatus("", false);
+
+      // Desbloqueia AudioContext no mesmo gesto do usuário
+      getAudioCtx();
+
+      setStatus('', false);
       try {
         recognition.start();
       } catch (e) {
-        setStatus("⚠️ Tente novamente.", true);
+        setStatus('⚠️ Tente novamente.', true);
       }
-    }
+    });
 
     function setStatus(msg, isErro) {
-      const el = document.getElementById("status");
+      const el = document.getElementById('status');
       el.textContent = msg;
-      el.className = isErro ? "erro" : "";
+      el.className = isErro ? 'erro' : '';
     }
 
     // ── localStorage ────────────────────────────────────────────────
 
     function carregarLembretes() {
       try {
-        return JSON.parse(localStorage.getItem("lembretes")) || [];
+        return JSON.parse(localStorage.getItem('lembretes')) || [];
       } catch {
         return [];
       }
     }
 
     function salvarLembretes(dados) {
-      localStorage.setItem("lembretes", JSON.stringify(dados));
+      localStorage.setItem('lembretes', JSON.stringify(dados));
     }
 
     function salvar(texto) {
       const dados = carregarLembretes();
-      const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       dados.unshift({ texto, hora, alarme: null });
       salvarLembretes(dados);
       renderLista();
@@ -245,25 +266,25 @@
 
     function renderLista() {
       const dados = carregarLembretes();
-      const lista = document.getElementById("lista");
-      const vazio = document.getElementById("vazio");
+      const lista = document.getElementById('lista');
+      const vazio = document.getElementById('vazio');
 
-      lista.innerHTML = "";
+      lista.innerHTML = '';
 
       if (dados.length === 0) {
-        vazio.style.display = "block";
+        vazio.style.display = 'block';
         return;
       }
 
-      vazio.style.display = "none";
+      vazio.style.display = 'none';
 
       dados.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "item-lembrete";
+        const div = document.createElement('div');
+        div.className = 'item-lembrete';
         div.innerHTML = `
           <span class="item-hora">${item.hora}</span>
           <span class="item-texto">${item.texto}</span>
-          ${item.alarme ? `<span class="item-badge">⏰ ${item.alarme} min</span>` : ""}
+          ${item.alarme ? `<span class="item-badge">⏰ ${item.alarme} min</span>` : ''}
         `;
         lista.appendChild(div);
       });
@@ -275,29 +296,29 @@
       const t = texto.toLowerCase();
 
       const porExtenso = {
-        "um": 1, "uma": 1,
-        "dois": 2, "duas": 2,
-        "três": 3, "tres": 3,
-        "quatro": 4,
-        "cinco": 5,
-        "seis": 6,
-        "sete": 7,
-        "oito": 8,
-        "nove": 9,
-        "dez": 10,
-        "onze": 11,
-        "doze": 12,
-        "treze": 13,
-        "catorze": 14, "quatorze": 14,
-        "quinze": 15,
-        "vinte": 20,
-        "trinta": 30,
-        "quarenta": 40,
-        "cinquenta": 50
+        'um': 1, 'uma': 1,
+        'dois': 2, 'duas': 2,
+        'três': 3, 'tres': 3,
+        'quatro': 4,
+        'cinco': 5,
+        'seis': 6,
+        'sete': 7,
+        'oito': 8,
+        'nove': 9,
+        'dez': 10,
+        'onze': 11,
+        'doze': 12,
+        'treze': 13,
+        'catorze': 14, 'quatorze': 14,
+        'quinze': 15,
+        'vinte': 20,
+        'trinta': 30,
+        'quarenta': 40,
+        'cinquenta': 50
       };
 
       for (const [palavra, valor] of Object.entries(porExtenso)) {
-        if (new RegExp(palavra + "\\s*minuto").test(t)) return valor;
+        if (new RegExp(palavra + '\\s*minuto').test(t)) return valor;
       }
 
       const matchDigito = t.match(/(\d+)\s*minuto/);
@@ -312,7 +333,7 @@
       const minutos = extrairMinutos(texto);
 
       if (!minutos) {
-        setStatus("✅ Lembrete salvo (nenhum tempo detectado).", false);
+        setStatus('✅ Lembrete salvo (nenhum tempo detectado).', false);
         return;
       }
 
@@ -320,39 +341,77 @@
       marcarAlarme(texto, minutos);
 
       setTimeout(() => {
-        dispararNotificacao(texto);
+        dispararAlarme(texto);
       }, minutos * 60 * 1000);
+    }
+
+    // ── Disparo: beep + vibração + notificação ──────────────────────
+
+    function dispararAlarme(texto) {
+      // 1) Beep audível via Web Audio API
+      // Funciona porque o AudioContext foi desbloqueado no clique do botão
+      try {
+        const ctx = getAudioCtx();
+        const tocarBeep = (inicio, duracao, freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, inicio);
+          gain.gain.setValueAtTime(0.7, inicio);
+          gain.gain.exponentialRampToValueAtTime(0.001, inicio + duracao);
+          osc.start(inicio);
+          osc.stop(inicio + duracao);
+        };
+        const now = ctx.currentTime;
+        tocarBeep(now,        0.25, 880);
+        tocarBeep(now + 0.35, 0.25, 880);
+        tocarBeep(now + 0.70, 0.50, 1100);
+      } catch (e) {
+        console.warn('Beep falhou:', e);
+      }
+
+      // 2) Vibração — padrão 3 pulsos
+      // navigator.vibrate() não exige gesto do usuário no momento da chamada
+      // desde que a página já esteja engajada (o usuário clicou antes)
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 150, 300, 150, 600]);
+      }
+
+      // 3) Notificação visual
+      dispararNotificacao(texto);
     }
 
     function dispararNotificacao(texto) {
       if (!Notification) {
-        alert("🔔 Lembrete: " + texto);
+        alert('🔔 Lembrete: ' + texto);
         return;
       }
 
-      if (Notification.permission === "granted") {
-        // Tenta via Service Worker (melhor suporte mobile)
+      if (Notification.permission === 'granted') {
+        // Tenta via Service Worker (melhor suporte mobile + vibração na notificação)
         if (navigator.serviceWorker && navigator.serviceWorker.controller) {
           navigator.serviceWorker.ready.then(reg => {
-            reg.showNotification("🔔 Lembrete", {
+            reg.showNotification('🔔 Lembrete', {
               body: texto,
-              icon: "icon.png",
-              vibrate: [200, 100, 200]
+              icon: 'icon.png',
+              vibrate: [300, 150, 300, 150, 600]
             });
           });
         } else {
-          new Notification("🔔 Lembrete", { body: texto });
+          new Notification('🔔 Lembrete', { body: texto });
         }
-      } else if (Notification.permission === "default") {
+      } else if (Notification.permission === 'default') {
         Notification.requestPermission().then(p => {
-          if (p === "granted") {
-            new Notification("🔔 Lembrete", { body: texto });
+          if (p === 'granted') {
+            new Notification('🔔 Lembrete', { body: texto });
           } else {
-            alert("🔔 Lembrete: " + texto);
+            alert('🔔 Lembrete: ' + texto);
           }
         });
       } else {
-        alert("🔔 Lembrete: " + texto);
+        alert('🔔 Lembrete: ' + texto);
       }
     }
 
