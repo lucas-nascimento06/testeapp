@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lembrete por Voz</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+      background: #f5f5f5;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 20px;
+      border: none;
+      border-radius: 10px;
+      background: #007bff;
+      color: white;
+    }
+
+    #texto {
+      margin-top: 30px;
+      font-size: 28px;
+    }
+
+    #lista {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🎙️ Fale seu lembrete</h1>
+  <button onclick="falar()">Falar</button>
+
+  <div id="texto">Clique e fale...</div>
+
+  <h2>📋 Lembretes</h2>
+  <div id="lista"></div>
+
+  <script>
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let recognition;
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+
+      recognition.onresult = (event) => {
+        const textoFalado = event.results[0][0].transcript;
+
+        texto.innerText = textoFalado;
+
+        salvar(textoFalado);
+        mostrar();
+        criarAlarme(textoFalado);
+      };
+    }
+
+    function falar() {
+      recognition.start();
+    }
+
+    // salvar
+    function salvar(texto) {
+      const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
+
+      dados.push({ texto });
+
+      localStorage.setItem("lembretes", JSON.stringify(dados));
+    }
+
+    // mostrar
+    function mostrar() {
+      const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
+
+      lista.innerHTML = "";
+
+      dados.forEach((item) => {
+        const p = document.createElement("p");
+        p.innerText = item.texto;
+        lista.appendChild(p);
+      });
+    }
+
+    // extrair hora
+    function extrairHora(texto) {
+      const match = texto.match(/\d{1,2}/);
+      return match ? parseInt(match[0]) : null;
+    }
+
+    // alarme
+    function criarAlarme(texto) {
+      const hora = extrairHora(texto);
+
+      if (!hora) return;
+
+      const agora = new Date();
+      const alvo = new Date();
+
+      alvo.setHours(hora);
+      alvo.setMinutes(0);
+
+      const tempo = alvo - agora;
+
+      if (tempo > 0) {
+        setTimeout(() => {
+          alert("🔔 " + texto);
+
+          if (navigator.vibrate) {
+            navigator.vibrate([300, 100, 300]);
+          }
+
+        }, tempo);
+      }
+    }
+
+    window.onload = mostrar;
+
+    // registrar service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
+
+</body>
+</html>
