@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Lembrete por Voz</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
 
   <style>
@@ -73,16 +72,13 @@
     // salvar
     function salvar(texto) {
       const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
-
       dados.push({ texto });
-
       localStorage.setItem("lembretes", JSON.stringify(dados));
     }
 
     // mostrar
     function mostrar() {
       const dados = JSON.parse(localStorage.getItem("lembretes")) || [];
-
       lista.innerHTML = "";
 
       dados.forEach((item) => {
@@ -92,41 +88,36 @@
       });
     }
 
-    // extrair hora
-    function extrairHora(texto) {
-      const match = texto.match(/\d{1,2}/);
-      return match ? parseInt(match[0]) : null;
+    // extrair minutos (ex: "em 5 minutos")
+    function extrairMinutos(texto) {
+      const match = texto.match(/(\d+)\s*min/);
+      return match ? parseInt(match[1]) : null;
     }
 
-    // alarme
+    // criar alarme
     function criarAlarme(texto) {
-      const hora = extrairHora(texto);
+      const minutos = extrairMinutos(texto);
 
-      if (!hora) return;
+      if (!minutos) return;
 
-      const agora = new Date();
-      const alvo = new Date();
+      const tempo = minutos * 60 * 1000;
 
-      alvo.setHours(hora);
-      alvo.setMinutes(0);
-
-      const tempo = alvo - agora;
-
-      if (tempo > 0) {
-        setTimeout(() => {
-          alert("🔔 " + texto);
-
-          if (navigator.vibrate) {
-            navigator.vibrate([300, 100, 300]);
-          }
-
-        }, tempo);
-      }
+      setTimeout(() => {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification("🔔 Lembrete", {
+            body: texto,
+            vibrate: [500, 200, 500, 200, 1000],
+            tag: "lembrete"
+          });
+        });
+      }, tempo);
     }
 
-    window.onload = mostrar;
+    window.onload = () => {
+      mostrar();
+      Notification.requestPermission();
+    };
 
-    // registrar service worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js");
     }
