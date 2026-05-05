@@ -1,423 +1,510 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
   <title>Lembrete por Voz</title>
-  <link rel="manifest" href="manifest.json" />
-
+  <meta name="theme-color" content="#1565C0"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Lembrete"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1565C0;
+      --blue-light: #1976D2;
+      --blue-btn: #2196F3;
+      --bg: #F0F2F5;
+      --card: #FFFFFF;
+      --text: #1a1a2e;
+      --muted: #888;
+      --green: #43A047;
+      --red: #E53935;
+      --orange: #F57C00;
+      --yellow: #FFC107;
     }
 
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f5f5f5;
-      padding: 40px 20px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
     }
 
-    h1 {
-      font-size: 26px;
-      margin-bottom: 24px;
-      color: #222;
-    }
-
-    h2 {
-      font-size: 20px;
-      margin: 30px 0 12px;
-      color: #333;
-    }
-
-    #btnFalar {
-      font-size: 22px;
-      padding: 18px 40px;
-      border: none;
-      border-radius: 12px;
-      background: #007bff;
+    /* ── Header ── */
+    header {
+      background: var(--blue);
       color: white;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
+      padding: 16px 20px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: .3px; }
+    header p  { font-size: .78rem; opacity: .8; margin-top: 2px; }
 
-    #btnFalar:hover {
-      background: #0069d9;
+    /* ── Banner de permissão (modal) ── */
+    #banner-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 1000;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: env(safe-area-inset-bottom, 0);
     }
-
-    #btnFalar:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    #texto {
-      margin-top: 20px;
-      font-size: 20px;
-      color: #333;
-      min-height: 28px;
-      font-style: italic;
-    }
-
-    #status {
-      margin-top: 10px;
-      font-size: 15px;
-      color: #28a745;
-      min-height: 20px;
-    }
-
-    #status.erro {
-      color: #dc3545;
-    }
-
-    #lista {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .item-lembrete {
-      font-size: 16px;
+    #banner-overlay.show { display: flex; }
+    #banner-box {
       background: white;
-      padding: 12px 16px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      max-width: 600px;
-      margin: 0 auto;
+      border-radius: 20px 20px 0 0;
+      padding: 28px 24px 32px;
       width: 100%;
+      max-width: 480px;
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    #banner-box .icon { font-size: 2.8rem; text-align: center; }
+    #banner-box h2 { text-align: center; font-size: 1.1rem; margin: 10px 0 8px; color: var(--blue); }
+    #banner-box p  { font-size: .875rem; color: #555; line-height: 1.5; text-align: center; margin-bottom: 20px; }
+    .banner-btns { display: flex; gap: 10px; }
+    .banner-btns button {
+      flex: 1; padding: 13px;
+      border-radius: 12px; border: none;
+      font-size: .95rem; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
+    }
+    .banner-btns button:active { opacity: .8; }
+    #btn-allow  { background: var(--blue-btn); color: white; }
+    #btn-deny   { background: #eee; color: #555; }
+
+    /* ── Conteúdo principal ── */
+    main { padding: 20px 16px 100px; max-width: 500px; margin: 0 auto; }
+
+    /* ── Botão Falar ── */
+    #btn-falar {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 18px;
+      background: var(--blue-btn); color: white;
+      border: none; border-radius: 16px;
+      font-size: 1.25rem; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(33,150,243,.4);
+      transition: transform .12s, box-shadow .12s;
+      margin-bottom: 10px;
+    }
+    #btn-falar:active { transform: scale(.97); box-shadow: 0 2px 6px rgba(33,150,243,.3); }
+    #btn-falar.ouvindo { background: #E53935; box-shadow: 0 4px 14px rgba(229,57,53,.4); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+
+    /* ── Status transcrição ── */
+    #status-texto {
+      min-height: 40px; background: white; border-radius: 10px;
+      padding: 10px 14px; font-size: .875rem; color: #555;
+      border: 1.5px solid #ddd; margin-bottom: 20px;
+      transition: border-color .2s;
+    }
+    #status-texto.ativo { border-color: var(--blue-btn); color: var(--text); }
+
+    /* ── Seção lembretes ── */
+    .section-title {
+      font-size: 1rem; font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px; color: var(--text);
     }
 
-    .item-hora {
-      font-size: 13px;
-      color: #888;
+    /* ── Cards de lembrete ── */
+    .lembrete-card {
+      background: var(--card); border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      display: flex; align-items: center; gap: 12px;
+      animation: fadeIn .25s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+    .lembrete-hora { font-size: .72rem; color: var(--muted); min-width: 36px; }
+    .lembrete-texto { flex: 1; font-size: .92rem; color: var(--text); }
+    .badge-timer {
+      background: #E8F5E9; color: var(--green);
+      font-size: .72rem; font-weight: 700;
+      padding: 4px 8px; border-radius: 20px;
       white-space: nowrap;
     }
-
-    .item-texto {
-      flex: 1;
-      color: #333;
+    .badge-disparado {
+      background: #FFF3E0; color: var(--orange);
+      font-size: .72rem; font-weight: 700;
+      padding: 4px 8px; border-radius: 20px;
     }
 
-    .item-badge {
-      font-size: 12px;
-      background: #d4edda;
-      color: #155724;
-      padding: 3px 10px;
-      border-radius: 99px;
-      white-space: nowrap;
+    /* ── Aviso de status SW ── */
+    #aviso-status {
+      margin-top: 24px; border-radius: 14px; padding: 14px 16px;
+      font-size: .82rem; line-height: 1.5;
+      display: flex; gap: 10px; align-items: flex-start;
     }
+    #aviso-status .aviso-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+    #aviso-status.ok     { background: #E8F5E9; color: #2E7D32; border: 1.5px solid #A5D6A7; }
+    #aviso-status.warn   { background: #FFF8E1; color: #E65100; border: 1.5px solid #FFE082; }
+    #aviso-status.error  { background: #FFEBEE; color: #C62828; border: 1.5px solid #FFCDD2; }
+    #aviso-status strong { display: block; margin-bottom: 2px; }
 
-    #vazio {
-      font-size: 15px;
-      color: #999;
-      padding: 20px 0;
-    }
+    /* ── Vazio ── */
+    .empty { text-align: center; color: var(--muted); padding: 30px 0; font-size: .875rem; }
   </style>
 </head>
-
 <body>
 
+<!-- HEADER -->
+<header>
   <h1>🎙️ Lembrete por Voz</h1>
+  <p>Diga o lembrete e o tempo — ex: "Tomar remédio daqui a 5 minutos"</p>
+</header>
 
-  <button id="btnFalar">🎤 Falar</button>
+<!-- BANNER DE PERMISSÃO -->
+<div id="banner-overlay">
+  <div id="banner-box">
+    <div class="icon">🔔</div>
+    <h2>Manter app ativo para lembretes</h2>
+    <p>Para que os lembretes funcionem mesmo com a tela desligada, o app precisa da sua permissão para enviar <strong>notificações</strong> e rodar em segundo plano.</p>
+    <div class="banner-btns">
+      <button id="btn-deny">Agora não</button>
+      <button id="btn-allow">✅ Permitir</button>
+    </div>
+  </div>
+</div>
 
-  <div id="texto"></div>
-  <div id="status"></div>
+<!-- CONTEÚDO -->
+<main>
+  <!-- Botão falar -->
+  <button id="btn-falar">🎤 Falar</button>
+  <div id="status-texto">Toque em Falar e diga seu lembrete…</div>
 
-  <h2>📋 Lembretes</h2>
-  <div id="lista"></div>
-  <div id="vazio">Nenhum lembrete ainda.</div>
+  <!-- Lista -->
+  <div class="section-title">📋 Lembretes</div>
+  <div id="lista-lembretes">
+    <div class="empty" id="empty-msg">Nenhum lembrete ainda.</div>
+  </div>
 
-  <script>
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  <!-- Aviso status SW -->
+  <div id="aviso-status" class="warn">
+    <span class="aviso-icon">⏳</span>
+    <div>
+      <strong>Verificando segundo plano…</strong>
+      Aguarde enquanto verificamos se o sistema está ativo.
+    </div>
+  </div>
+</main>
 
-    let recognition = null;
-    let ouvindo = false;
+<script>
+// ═══════════════════════════════════════════
+//  REGISTRO DO SERVICE WORKER
+// ═══════════════════════════════════════════
+let swReg = null;
+let swReady = false;
 
-    // AudioContext desbloqueado no primeiro clique do usuário
-    let audioCtx = null;
+async function registrarSW() {
+  if (!('serviceWorker' in navigator)) {
+    setAvisoStatus('error', '❌ Não suportado', 'Seu navegador não suporta Service Worker. Os lembretes não funcionarão em segundo plano.');
+    return;
+  }
+  try {
+    swReg = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    swReady = true;
+    atualizarAvisoStatus();
+  } catch(e) {
+    setAvisoStatus('error', '❌ Erro no segundo plano', 'Não foi possível ativar o sistema em segundo plano: ' + e.message);
+  }
+}
 
-    function getAudioCtx() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      // Resume caso esteja suspenso (política de autoplay)
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
+// ═══════════════════════════════════════════
+//  PERMISSÃO DE NOTIFICAÇÃO
+// ═══════════════════════════════════════════
+let notifPermitido = false;
+
+function atualizarAvisoStatus() {
+  const perm = Notification.permission;
+  notifPermitido = perm === 'granted';
+
+  if (!swReady && perm !== 'granted') {
+    setAvisoStatus('warn', '⚠️ Segundo plano inativo', 'Permita as notificações e mantenha o app aberto para que os lembretes funcionem.');
+  } else if (!swReady) {
+    setAvisoStatus('warn', '⚠️ Segundo plano inativo', 'O sistema de segundo plano não está ativo. Recarregue o app.');
+  } else if (perm === 'denied') {
+    setAvisoStatus('error', '🚫 Notificações bloqueadas', 'Vá em Configurações do navegador e permita notificações para este site.');
+  } else if (perm !== 'granted') {
+    setAvisoStatus('warn', '🔔 Permissão necessária', 'Para receber alertas mesmo com a tela desligada, permita as notificações.');
+  } else {
+    setAvisoStatus('ok', '✅ Sistema ativo em segundo plano', 'Os lembretes serão disparados mesmo com o app minimizado.');
+  }
+}
+
+function setAvisoStatus(tipo, titulo, msg) {
+  const el = document.getElementById('aviso-status');
+  el.className = 'aviso-status ' + tipo;
+  // ícone
+  const icons = { ok:'✅', warn:'⚠️', error:'❌' };
+  el.innerHTML = `<span class="aviso-icon">${icons[tipo]||'ℹ️'}</span><div><strong>${titulo}</strong>${msg}</div>`;
+  // re-aplica classe (innerHTML apaga)
+  el.id = 'aviso-status';
+  el.classList.add(tipo);
+}
+
+// ═══════════════════════════════════════════
+//  BANNER DE PERMISSÃO
+// ═══════════════════════════════════════════
+function mostrarBanner() {
+  if (Notification.permission === 'default') {
+    document.getElementById('banner-overlay').classList.add('show');
+  }
+}
+
+document.getElementById('btn-allow').addEventListener('click', async () => {
+  document.getElementById('banner-overlay').classList.remove('show');
+  const result = await Notification.requestPermission();
+  notifPermitido = result === 'granted';
+  atualizarAvisoStatus();
+});
+
+document.getElementById('btn-deny').addEventListener('click', () => {
+  document.getElementById('banner-overlay').classList.remove('show');
+  atualizarAvisoStatus();
+});
+
+// ═══════════════════════════════════════════
+//  RECONHECIMENTO DE VOZ
+// ═══════════════════════════════════════════
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let ouvindo = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    ouvindo = true;
+    document.getElementById('btn-falar').classList.add('ouvindo');
+    document.getElementById('btn-falar').textContent = '⏹ Parar';
+    const s = document.getElementById('status-texto');
+    s.textContent = '🎙️ Ouvindo…';
+    s.classList.add('ativo');
+  };
+
+  recognition.onresult = (e) => {
+    const texto = e.results[e.results.length - 1][0].transcript;
+    document.getElementById('status-texto').textContent = texto;
+    if (e.results[e.results.length - 1].isFinal) processarVoz(texto);
+  };
+
+  recognition.onend = () => {
+    ouvindo = false;
+    document.getElementById('btn-falar').classList.remove('ouvindo');
+    document.getElementById('btn-falar').textContent = '🎤 Falar';
+  };
+
+  recognition.onerror = (e) => {
+    document.getElementById('status-texto').textContent = '⚠️ Erro: ' + e.error;
+  };
+}
+
+document.getElementById('btn-falar').addEventListener('click', () => {
+  if (!recognition) { alert('Reconhecimento de voz não suportado neste navegador.'); return; }
+  if (ouvindo) { recognition.stop(); return; }
+  recognition.start();
+});
+
+// ═══════════════════════════════════════════
+//  PARSER DE VOZ → TEMPO
+// ═══════════════════════════════════════════
+function parsearTempo(texto) {
+  const t = texto.toLowerCase();
+  let ms = null;
+
+  const regexes = [
+    { re: /daqui\s+a?\s+(\d+)\s*(hora|horas|h)\b/,   mult: 3600000 },
+    { re: /daqui\s+a?\s+(\d+)\s*(minuto|minutos|min)\b/, mult: 60000 },
+    { re: /daqui\s+a?\s+(\d+)\s*(segundo|segundos|seg|s)\b/, mult: 1000 },
+    { re: /em\s+(\d+)\s*(hora|horas|h)\b/,   mult: 3600000 },
+    { re: /em\s+(\d+)\s*(minuto|minutos|min)\b/, mult: 60000 },
+    { re: /em\s+(\d+)\s*(segundo|segundos|seg|s)\b/, mult: 1000 },
+    // palavras por extenso
+    { re: /um\s+(minuto)/, mult: 60000, fixVal: 1 },
+    { re: /dois?\s+(minuto|minutos)/, mult: 60000, fixVal: 2 },
+    { re: /trinta\s+(segundo|segundos)/, mult: 1000, fixVal: 30 },
+    { re: /meia\s+hora/, mult: 1800000, fixVal: 1 },
+    { re: /uma\s+hora/, mult: 3600000, fixVal: 1 },
+  ];
+
+  for (const r of regexes) {
+    const m = t.match(r.re);
+    if (m) {
+      const val = r.fixVal !== undefined ? r.fixVal : parseInt(m[1]);
+      ms = val * r.mult;
+      break;
     }
+  }
+  return ms;
+}
 
-    // Solicitar permissão de notificação ao carregar
-    if (Notification && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+// ═══════════════════════════════════════════
+//  PROCESSAR VOZ E AGENDAR
+// ═══════════════════════════════════════════
+const lembretes = [];
 
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.lang = 'pt-BR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+function processarVoz(texto) {
+  const ms = parsearTempo(texto);
+  const agora = new Date();
+  const hora = ms
+    ? `${String(agora.getHours()).padStart(2,'0')}:${String(agora.getMinutes()).padStart(2,'0')}`
+    : 'undefined';
 
-      recognition.onstart = () => {
-        ouvindo = true;
-        setStatus('🎙️ Ouvindo...', false);
-        document.getElementById('texto').textContent = '';
-        document.getElementById('btnFalar').disabled = true;
-      };
+  const id = Date.now();
+  const item = { id, texto, hora, ms, disparado: false };
+  lembretes.unshift(item);
+  renderizarLista();
 
-      recognition.onend = () => {
-        ouvindo = false;
-        document.getElementById('btnFalar').disabled = false;
-      };
+  if (ms) agendarLembrete(item);
 
-      recognition.onerror = (event) => {
-        ouvindo = false;
-        document.getElementById('btnFalar').disabled = false;
+  document.getElementById('status-texto').textContent = ms
+    ? `✅ Agendado: "${texto}"`
+    : `⚠️ Não entendi o tempo em: "${texto}"`;
+  document.getElementById('status-texto').classList.remove('ativo');
+}
 
-        const msgs = {
-          'not-allowed': '❌ Permissão de microfone negada.',
-          'no-speech': '⚠️ Nenhuma fala detectada. Tente novamente.',
-          'network': '❌ Erro de rede. Verifique a conexão.',
-          'aborted': '⚠️ Reconhecimento cancelado.',
-          'audio-capture': '❌ Microfone não encontrado.',
-          'service-not-allowed': '❌ Serviço de voz não permitido.',
-        };
-
-        setStatus(msgs[event.error] || '❌ Erro: ' + event.error, true);
-      };
-
-      recognition.onresult = (event) => {
-        const textoFalado = event.results[0][0].transcript;
-        document.getElementById('texto').textContent = '"' + textoFalado + '"';
-        salvar(textoFalado);
-        criarAlarme(textoFalado);
-      };
-
-    } else {
-      setStatus('❌ Seu navegador não suporta reconhecimento de voz.', true);
-      document.getElementById('btnFalar').disabled = true;
-    }
-
-    // ── Botão principal ─────────────────────────────────────────────
-    // O AudioContext PRECISA ser criado/desbloqueado dentro de um
-    // evento de toque/clique do usuário para que a vibração e o
-    // beep funcionem quando disparados pelo setTimeout.
-
-    document.getElementById('btnFalar').addEventListener('click', () => {
-      if (ouvindo) return;
-
-      // Desbloqueia AudioContext no mesmo gesto do usuário
-      getAudioCtx();
-
-      setStatus('', false);
-      try {
-        recognition.start();
-      } catch (e) {
-        setStatus('⚠️ Tente novamente.', true);
+function agendarLembrete(item) {
+  // Tenta pelo Service Worker (segundo plano)
+  if (swReg && swReg.active && notifPermitido) {
+    swReg.active.postMessage({ type: 'AGENDAR', texto: item.texto, ms: item.ms, id: item.id });
+  } else if (notifPermitido) {
+    // Fallback: setTimeout direto (só funciona com app aberto)
+    setTimeout(() => dispararNotificacao(item), item.ms);
+  } else {
+    // Sem permissão: alerta só visual
+    setTimeout(() => {
+      item.disparado = true;
+      renderizarLista();
+      if (document.visibilityState === 'visible') {
+        alert('🔔 ' + item.texto);
       }
+    }, item.ms);
+  }
+
+  // Atualiza badge de countdown na UI
+  iniciarCountdown(item);
+}
+
+function dispararNotificacao(item) {
+  item.disparado = true;
+  renderizarLista();
+  if (Notification.permission === 'granted') {
+    new Notification('🔔 Lembrete', {
+      body: item.texto,
+      requireInteraction: true,
+      vibrate: [400,150,400,150,800]
     });
+  }
+}
 
-    function setStatus(msg, isErro) {
-      const el = document.getElementById('status');
-      el.textContent = msg;
-      el.className = isErro ? 'erro' : '';
+// ═══════════════════════════════════════════
+//  COUNTDOWN VISUAL
+// ═══════════════════════════════════════════
+const countdowns = {};
+
+function iniciarCountdown(item) {
+  const fim = Date.now() + item.ms;
+  countdowns[item.id] = setInterval(() => {
+    const resto = fim - Date.now();
+    if (resto <= 0) {
+      clearInterval(countdowns[item.id]);
+      item.disparado = true;
+      renderizarLista();
+      return;
+    }
+    const el = document.getElementById('badge-' + item.id);
+    if (el) el.textContent = '⏰ ' + formatarResto(resto);
+  }, 1000);
+}
+
+function formatarResto(ms) {
+  const s = Math.ceil(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), ss = s % 60;
+  return m + 'min' + (ss ? ' ' + ss + 's' : '');
+}
+
+// ═══════════════════════════════════════════
+//  RENDERIZAR LISTA
+// ═══════════════════════════════════════════
+function renderizarLista() {
+  const el = document.getElementById('lista-lembretes');
+  el.innerHTML = '';
+  const empty = document.getElementById('empty-msg');
+
+  if (lembretes.length === 0) {
+    el.appendChild(empty || criarEmpty());
+    return;
+  }
+
+  lembretes.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'lembrete-card';
+
+    const hora = document.createElement('span');
+    hora.className = 'lembrete-hora';
+    hora.textContent = item.hora;
+
+    const txt = document.createElement('span');
+    txt.className = 'lembrete-texto';
+    txt.textContent = item.texto;
+
+    card.appendChild(hora);
+    card.appendChild(txt);
+
+    if (item.ms && !item.disparado) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-timer';
+      badge.id = 'badge-' + item.id;
+      badge.textContent = '⏰ ' + formatarResto(item.ms);
+      card.appendChild(badge);
+    } else if (item.disparado) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-disparado';
+      badge.textContent = '✅ Disparado';
+      card.appendChild(badge);
     }
 
-    // ── localStorage ────────────────────────────────────────────────
+    el.appendChild(card);
+  });
+}
 
-    function carregarLembretes() {
-      try {
-        return JSON.parse(localStorage.getItem('lembretes')) || [];
-      } catch {
-        return [];
-      }
-    }
+function criarEmpty() {
+  const d = document.createElement('div');
+  d.className = 'empty';
+  d.id = 'empty-msg';
+  d.textContent = 'Nenhum lembrete ainda.';
+  return d;
+}
 
-    function salvarLembretes(dados) {
-      localStorage.setItem('lembretes', JSON.stringify(dados));
-    }
+// ═══════════════════════════════════════════
+//  INICIALIZAÇÃO
+// ═══════════════════════════════════════════
+(async () => {
+  await registrarSW();
 
-    function salvar(texto) {
-      const dados = carregarLembretes();
-      const hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      dados.unshift({ texto, hora, alarme: null });
-      salvarLembretes(dados);
-      renderLista();
-    }
+  // Mostrar banner se ainda não pediu permissão
+  setTimeout(() => {
+    if (Notification.permission === 'default') mostrarBanner();
+    else atualizarAvisoStatus();
+  }, 800);
 
-    function marcarAlarme(texto, minutos) {
-      const dados = carregarLembretes();
-      const item = dados.find(d => d.texto === texto && d.alarme === null);
-      if (item) {
-        item.alarme = minutos;
-        salvarLembretes(dados);
-        renderLista();
-      }
-    }
-
-    // ── Renderização ────────────────────────────────────────────────
-
-    function renderLista() {
-      const dados = carregarLembretes();
-      const lista = document.getElementById('lista');
-      const vazio = document.getElementById('vazio');
-
-      lista.innerHTML = '';
-
-      if (dados.length === 0) {
-        vazio.style.display = 'block';
-        return;
-      }
-
-      vazio.style.display = 'none';
-
-      dados.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'item-lembrete';
-        div.innerHTML = `
-          <span class="item-hora">${item.hora}</span>
-          <span class="item-texto">${item.texto}</span>
-          ${item.alarme ? `<span class="item-badge">⏰ ${item.alarme} min</span>` : ''}
-        `;
-        lista.appendChild(div);
-      });
-    }
-
-    // ── Extração de tempo ───────────────────────────────────────────
-
-    function extrairMinutos(texto) {
-      const t = texto.toLowerCase();
-
-      const porExtenso = {
-        'um': 1, 'uma': 1,
-        'dois': 2, 'duas': 2,
-        'três': 3, 'tres': 3,
-        'quatro': 4,
-        'cinco': 5,
-        'seis': 6,
-        'sete': 7,
-        'oito': 8,
-        'nove': 9,
-        'dez': 10,
-        'onze': 11,
-        'doze': 12,
-        'treze': 13,
-        'catorze': 14, 'quatorze': 14,
-        'quinze': 15,
-        'vinte': 20,
-        'trinta': 30,
-        'quarenta': 40,
-        'cinquenta': 50
-      };
-
-      for (const [palavra, valor] of Object.entries(porExtenso)) {
-        if (new RegExp(palavra + '\\s*minuto').test(t)) return valor;
-      }
-
-      const matchDigito = t.match(/(\d+)\s*minuto/);
-      if (matchDigito) return parseInt(matchDigito[1]);
-
-      return null;
-    }
-
-    // ── Alarme ──────────────────────────────────────────────────────
-
-    function criarAlarme(texto) {
-      const minutos = extrairMinutos(texto);
-
-      if (!minutos) {
-        setStatus('✅ Lembrete salvo (nenhum tempo detectado).', false);
-        return;
-      }
-
-      setStatus(`✅ Alarme criado! Você será lembrado em ${minutos} minuto(s).`, false);
-      marcarAlarme(texto, minutos);
-
-      setTimeout(() => {
-        dispararAlarme(texto);
-      }, minutos * 60 * 1000);
-    }
-
-    // ── Disparo: beep + vibração + notificação ──────────────────────
-
-    function dispararAlarme(texto) {
-      // 1) Beep audível via Web Audio API
-      // Funciona porque o AudioContext foi desbloqueado no clique do botão
-      try {
-        const ctx = getAudioCtx();
-        const tocarBeep = (inicio, duracao, freq) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, inicio);
-          gain.gain.setValueAtTime(0.7, inicio);
-          gain.gain.exponentialRampToValueAtTime(0.001, inicio + duracao);
-          osc.start(inicio);
-          osc.stop(inicio + duracao);
-        };
-        const now = ctx.currentTime;
-        tocarBeep(now,        0.25, 880);
-        tocarBeep(now + 0.35, 0.25, 880);
-        tocarBeep(now + 0.70, 0.50, 1100);
-      } catch (e) {
-        console.warn('Beep falhou:', e);
-      }
-
-      // 2) Vibração — padrão 3 pulsos
-      // navigator.vibrate() não exige gesto do usuário no momento da chamada
-      // desde que a página já esteja engajada (o usuário clicou antes)
-      if (navigator.vibrate) {
-        navigator.vibrate([300, 150, 300, 150, 600]);
-      }
-
-      // 3) Notificação visual
-      dispararNotificacao(texto);
-    }
-
-    function dispararNotificacao(texto) {
-      if (!Notification) {
-        alert('🔔 Lembrete: ' + texto);
-        return;
-      }
-
-      if (Notification.permission === 'granted') {
-        // Tenta via Service Worker (melhor suporte mobile + vibração na notificação)
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.ready.then(reg => {
-            reg.showNotification('🔔 Lembrete', {
-              body: texto,
-              icon: 'icon.png',
-              vibrate: [300, 150, 300, 150, 600]
-            });
-          });
-        } else {
-          new Notification('🔔 Lembrete', { body: texto });
-        }
-      } else if (Notification.permission === 'default') {
-        Notification.requestPermission().then(p => {
-          if (p === 'granted') {
-            new Notification('🔔 Lembrete', { body: texto });
-          } else {
-            alert('🔔 Lembrete: ' + texto);
-          }
-        });
-      } else {
-        alert('🔔 Lembrete: ' + texto);
-      }
-    }
-
-    // ── Init ────────────────────────────────────────────────────────
-    renderLista();
-  </script>
-
+  renderizarLista();
+})();
+</script>
 </body>
 </html>
